@@ -20,6 +20,7 @@ const AdminDashboard: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [editingStaff, setEditingStaff] = useState<User | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [searchTerm, setSearchTerm] = useState(''); // New state for search term
 
   // Initialize from Local Storage
   useEffect(() => {
@@ -72,6 +73,18 @@ const AdminDashboard: React.FC = () => {
     });
     return list;
   }, [customers, today]);
+
+  // Filtered customers based on search term
+  const filteredCustomers = useMemo(() => {
+    if (!searchTerm) {
+      return customers;
+    }
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return customers.filter(c =>
+      c.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+      c.phone.includes(lowerCaseSearchTerm)
+    );
+  }, [customers, searchTerm]);
 
   const handleAddStaff = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -306,6 +319,14 @@ const AdminDashboard: React.FC = () => {
             </form>
           </div>
           <div className="lg:col-span-3 space-y-4">
+            {/* Search Bar */}
+            <input 
+              type="text" 
+              placeholder="Search by name or phone..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+              className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium placeholder:text-slate-400 shadow-sm" 
+            />
             <div className="bg-slate-900 text-white p-5 rounded-[24px] flex flex-wrap gap-8 items-center justify-center text-[11px] font-black uppercase tracking-widest shadow-xl border-t-4 border-indigo-500">
               <span className="text-indigo-400">Action Status Legend:</span>
               <div className="flex items-center gap-2"><div className="w-2 h-2 bg-indigo-500 rounded-full"></div> M: Message (7d Before)</div>
@@ -325,7 +346,7 @@ const AdminDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {customers.map(c => (
+                  {filteredCustomers.map(c => (
                     <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-8 py-6">
                         <p className="font-bold text-slate-900 text-base">{c.name}</p>
@@ -347,8 +368,10 @@ const AdminDashboard: React.FC = () => {
                       </td>
                     </tr>
                   ))}
-                  {customers.length === 0 && (
-                    <tr><td colSpan={5} className="p-12 text-center text-slate-400 font-medium italic">No customer records found. Add one to get started!</td></tr>
+                  {filteredCustomers.length === 0 && (
+                    <tr><td colSpan={5} className="p-12 text-center text-slate-400 font-medium italic">
+                      {searchTerm ? `No customer records found matching "${searchTerm}".` : 'No customer records found. Add one to get started!'}
+                    </td></tr>
                   )}
                 </tbody>
               </table>
