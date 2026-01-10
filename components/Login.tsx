@@ -1,9 +1,7 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
-import { ADMIN_USERNAME, ADMIN_PASSWORD } from '../constants';
-import { db } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { ADMIN_USERNAME, ADMIN_PASSWORD, STORAGE_KEYS } from '../constants';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -15,38 +13,33 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoggingIn(true);
 
-    try {
+    // Simulate a tiny delay for feel
+    setTimeout(() => {
       // Check Admin
       if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
         onLogin({ id: 'admin-0', username: ADMIN_USERNAME, role: 'ADMIN' });
+        setIsLoggingIn(false);
         return;
       }
 
-      // Check Staff in Firestore
-      const q = query(
-        collection(db, 'staff'), 
-        where('username', '==', username), 
-        where('password', '==', password)
-      );
-      const querySnapshot = await getDocs(q);
+      // Check Staff in Local Storage
+      const staffRaw = localStorage.getItem(STORAGE_KEYS.STAFF);
+      const staffList: User[] = staffRaw ? JSON.parse(staffRaw) : [];
+      
+      const foundStaff = staffList.find(s => s.username === username && s.password === password);
 
-      if (!querySnapshot.empty) {
-        const staffDoc = querySnapshot.docs[0];
-        onLogin({ id: staffDoc.id, ...staffDoc.data() } as User);
+      if (foundStaff) {
+        onLogin(foundStaff);
       } else {
         setError('Invalid credentials.');
       }
-    } catch (err) {
-      console.error(err);
-      setError('Connection failed. Please check your Firebase config.');
-    } finally {
       setIsLoggingIn(false);
-    }
+    }, 500);
   };
 
   return (
